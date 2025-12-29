@@ -1090,9 +1090,9 @@ class YOLOEModel(DetectionModel):
             names (list[str]): List of class names.
             embeddings (torch.Tensor): Embeddings tensor.
         """
-        assert not hasattr(self.model[-1], "lrpc"), (
-            "Prompt-free model does not support setting classes. Please try with Text/Visual prompt models."
-        )
+        assert not hasattr(
+            self.model[-1], "lrpc"
+        ), "Prompt-free model does not support setting classes. Please try with Text/Visual prompt models."
         assert embeddings.ndim == 3
         self.pe = embeddings
         self.model[-1].nc = len(names)
@@ -1578,9 +1578,7 @@ def parse_model(d, ch, verbose=True):
         m = (
             getattr(torch.nn, m[3:])
             if "nn." in m
-            else getattr(__import__("torchvision").ops, m[16:])
-            if "torchvision.ops." in m
-            else globals()[m]
+            else getattr(__import__("torchvision").ops, m[16:]) if "torchvision.ops." in m else globals()[m]
         )  # get module
         for j, a in enumerate(args):
             if isinstance(a, str):
