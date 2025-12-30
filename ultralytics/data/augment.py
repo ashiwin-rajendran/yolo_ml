@@ -252,9 +252,9 @@ class Compose:
         """
         assert isinstance(index, (int, list)), f"The indices should be either list or int type but got {type(index)}"
         if isinstance(index, list):
-            assert isinstance(value, list), (
-                f"The indices should be the same type as values, but got {type(index)} and {type(value)}"
-            )
+            assert isinstance(
+                value, list
+            ), f"The indices should be the same type as values, but got {type(index)} and {type(value)}"
         if isinstance(index, int):
             index, value = [index], [value]
         for i, v in zip(index, value):
@@ -645,7 +645,7 @@ class Mosaic(BaseMixTransform):
 
             # Place img in img4
             if i == 0:  # top left
-                img4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base image with 4 tiles
+                img4 = np.full((s * 2, s * 2, img.shape[2]), 0, dtype=np.uint8)  # BLACK instead of gray
                 x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large image)
                 x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small image)
             elif i == 1:  # top right
@@ -1111,9 +1111,9 @@ class RandomPerspective:
         # Affine image
         if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  # image changed
             if self.perspective:
-                img = cv2.warpPerspective(img, M, dsize=self.size, borderValue=(114, 114, 114))
+                img = cv2.warpPerspective(img, M, dsize=self.size, borderValue=(0, 0, 0))
             else:  # affine
-                img = cv2.warpAffine(img, M[:2], dsize=self.size, borderValue=(114, 114, 114))
+                img = cv2.warpAffine(img, M[:2], dsize=self.size, borderValue=(0, 0, 0))
             if img.ndim == 2:
                 img = img[..., None]
         return img, M, s
@@ -1624,9 +1624,7 @@ class LetterBox:
         left, right = round(dw - 0.1) if self.center else 0, round(dw + 0.1)
         h, w, c = img.shape
         if c == 3:
-            img = cv2.copyMakeBorder(
-                img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(self.padding_value,) * 3
-            )
+            img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
         else:  # multispectral
             pad_img = np.full((h + top + bottom, w + left + right, c), fill_value=self.padding_value, dtype=img.dtype)
             pad_img[top : top + h, left : left + w] = img
