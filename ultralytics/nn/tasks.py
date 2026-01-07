@@ -136,6 +136,17 @@ class BaseModel(torch.nn.Module):
             return self.loss(x, *args, **kwargs)
         return self.predict(x, *args, **kwargs)
 
+    # [CUSTOM EDIT] add embed function
+    def embed(self, x):
+        """Get second last layer as embedding
+        Args:
+            x (torch.Tensor): The input tensor to the model.
+        Returns:
+            (torch.Tensor): Embeddings vector
+        """
+        embed_layer = -2 % len(self.model)
+        return self._predict_once(x, embed=[embed_layer])
+
     def predict(self, x, profile=False, visualize=False, augment=False, embed=None):
         """Perform a forward pass through the network.
 
@@ -166,8 +177,8 @@ class BaseModel(torch.nn.Module):
             (torch.Tensor): The last output of the model.
         """
         y, dt, embeddings = [], [], []  # outputs
-        embed = frozenset(embed) if embed is not None else {-1}
-        max_idx = max(embed)
+        embed = frozenset(embed) if embed is not None else frozenset()
+        max_idx = max(embed) if embed else -1  # Handle empty embed set
         for m in self.model:
             if m.f != -1:  # if not from previous layer
                 x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
@@ -177,11 +188,15 @@ class BaseModel(torch.nn.Module):
             y.append(x if m.i in self.save else None)  # save output
             if visualize:
                 feature_visualization(x, m.type, m.i, save_dir=visualize)
-            if m.i in embed:
-                embeddings.append(torch.nn.functional.adaptive_avg_pool2d(x, (1, 1)).squeeze(-1).squeeze(-1))  # flatten
-                if m.i == max_idx:
-                    return torch.unbind(torch.cat(embeddings, 1), dim=0)
-        return x
+            if embed and m.i in embed:
+                # [CUSTOM EDIT] return embeddings as tensor
+                embeddings = nn.functional.adaptive_avg_pool2d(x, (1, 1)).squeeze(-1).squeeze(-1)  # flatten
+
+        # Only return when embeddings were actually extracted
+        if isinstance(embeddings, torch.Tensor):
+            return x[0], x[1], embeddings
+
+        return x  # Normal return for training
 
     def _predict_augment(self, x):
         """Perform augmentations on input image x and return augmented inference."""
